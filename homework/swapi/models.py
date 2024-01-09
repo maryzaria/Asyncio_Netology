@@ -1,8 +1,8 @@
 import os
-from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, AsyncAttrs
-from sqlalchemy.orm import DeclarativeBase, mapped_column, Mapped
-from sqlalchemy import String, Text
 
+from sqlalchemy import String, Text
+from sqlalchemy.ext.asyncio import AsyncAttrs, async_sessionmaker, create_async_engine
+from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
 POSTGRES_PASSWORD = os.getenv("POSTGRES_PASSWORD", "secret")
 POSTGRES_USER = os.getenv("POSTGRES_USER", "swapi")
@@ -44,4 +44,3 @@ async def init_db():
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.drop_all)
         await conn.run_sync(Base.metadata.create_all)
-

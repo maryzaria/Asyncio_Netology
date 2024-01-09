@@ -1,24 +1,21 @@
 import asyncio
 from datetime import datetime
-
-from aiohttp import ClientSession
-from typing import Union, AsyncGenerator
+from typing import AsyncGenerator, Union
 
 import requests
+from aiohttp import ClientSession
+from models import Session, SwapiPeople, init_db
 from more_itertools import chunked
 
-
-from models import init_db, Session, SwapiPeople
-
 MAX_CHUNK = 5
-PEOPLE_CNT = requests.get('https://swapi.py4e.com/api/people/').json()['count']
+PEOPLE_CNT = requests.get("https://swapi.py4e.com/api/people/").json()["count"]
 
 
 async def get_person(person_id: str, session: ClientSession) -> dict:
     """Получение информации о конкретном персонаже"""
     http_response = await session.get(f"https://swapi.py4e.com/api/people/{person_id}/")
     if http_response.status == 404:
-        return {'status': 404}
+        return {"status": 404}
     json_data = await http_response.json()
     return json_data
 
@@ -26,14 +23,16 @@ async def get_person(person_id: str, session: ClientSession) -> dict:
 async def get_url(url: str, key: str, session: ClientSession) -> str:
     """Функция для отправки запроса по конкретному url"""
     try:
-        async with session.get(f'{url}') as response:
+        async with session.get(f"{url}") as response:
             data = await response.json()
             return data[key]
     except Exception:
-        return 'error'
+        return "error"
 
 
-async def tasks_urls(urls: Union[list | str], key: str, session: ClientSession) -> AsyncGenerator:
+async def tasks_urls(
+    urls: Union[list | str], key: str, session: ClientSession
+) -> AsyncGenerator:
     """Функция создания задачи по отправки запроса"""
     if isinstance(urls, list):
         tasks = (asyncio.create_task(get_url(url, key, session)) for url in urls)
@@ -49,8 +48,8 @@ async def urls_data(urls: Union[list | str], key: str, session: ClientSession) -
     if urls:
         async for item in tasks_urls(urls, key, session):
             result.append(item)
-        return ', '.join(result)
-    return ''
+        return ", ".join(result)
+    return ""
 
 
 async def insert_to_db(people: list[dict]) -> None:
@@ -58,22 +57,22 @@ async def insert_to_db(people: list[dict]) -> None:
     async with Session() as db_session:
         async with ClientSession() as session:
             for data in people:
-                if data.get('status') == 404:
+                if data.get("status") == 404:
                     break
                 person = SwapiPeople(
-                    birth_year=data.get('birth_year'),
-                    eye_color=data.get('eye_color'),
-                    films=await urls_data(data.get('films'), 'title', session),
-                    gender=data.get('gender'),
-                    hair_color=data.get('hair_color'),
-                    height=data.get('height'),
-                    homeworld=await urls_data(data.get('homeworld'), 'name', session),
-                    mass=data.get('mass'),
-                    name=data.get('name'),
-                    skin_color=data.get('skin_color'),
-                    species=await urls_data(data.get('species'), 'name', session),
-                    starships=await urls_data(data.get('starships'), 'name', session),
-                    vehicles=await urls_data(data.get('vehicles'), 'name', session),
+                    birth_year=data.get("birth_year"),
+                    eye_color=data.get("eye_color"),
+                    films=await urls_data(data.get("films"), "title", session),
+                    gender=data.get("gender"),
+                    hair_color=data.get("hair_color"),
+                    height=data.get("height"),
+                    homeworld=await urls_data(data.get("homeworld"), "name", session),
+                    mass=data.get("mass"),
+                    name=data.get("name"),
+                    skin_color=data.get("skin_color"),
+                    species=await urls_data(data.get("species"), "name", session),
+                    starships=await urls_data(data.get("starships"), "name", session),
+                    vehicles=await urls_data(data.get("vehicles"), "name", session),
                 )
                 db_session.add(person)
                 await db_session.commit()
@@ -92,7 +91,7 @@ async def main():
     await asyncio.gather(*all_tasks_set)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     start = datetime.now()
     asyncio.run(main())
-    print(f'Все данные помещены в БД за время: {datetime.now() - start}')
+    print(f"Все данные помещены в БД. Время выполнения: {datetime.now() - start}")
